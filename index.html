@@ -22,7 +22,7 @@ function sum(){const r=calc();$("#cn").textContent=r.it.reduce((a,x)=>a+x.q,0);
 function track(){const id=localStorage.oid;if(!id)return;un&&un();
  un=F.onSnapshot(F.doc(db,"orders",id),s=>{const o=s.data();if(!o){$("#trk").innerHTML="";return}
  const L=["Alındı","Hazırlanıyor","Yolda","Teslim edildi"],i=["new","prep","way","done"].indexOf(o.status),x=o.status=="cancelled";
- $("#trk").innerHTML=`<div class="card"><b>${x?"Siparişin iptal edildi":"Siparişin: "+L[i]}</b>`+(x?"":`<div class="steps">${L.map((l,k)=>`<span class="${k<=i?"on":""}">${l}</span>`).join("")}</div>`)+(x||i==3?'<button id="x">Kapat</button>':"")+"</div>"},()=>{})}
+ $("#trk").innerHTML=`<div class="card"><b>${x?"Siparişiniz iptal edildi":"Siparişinizin durumu: "+L[i]}</b>${x||i==3?"":"<p>Siparişiniz alındı. Durumunu sayfanın üst kısmından takip edebilirsiniz.</p>"}`+(x?"":`<div class="steps">${L.map((l,k)=>`<span class="${k<=i?"on":""}">${l}</span>`).join("")}</div>`)+(x||i==3?'<button id="x">Kapat</button>':"")+"</div>"},()=>{})}
 (async()=>{S=await getSettings();applyTheme(S.theme);document.title=S.name;$("#nm").textContent=S.theme.emoji+" "+S.name;
  if(S.delivery.mode=="region")$("#rgw").innerHTML=`<select name="rg" id="rg" required><option value="">Mahalle seç</option>${S.delivery.regions.map(r=>`<option>${e(r.n)}</option>`).join("")}</select>`;
  [cats,prods,camps]=await Promise.all([col("categories"),col("products"),col("campaigns")]);
@@ -37,5 +37,5 @@ document.onclick=ev=>{const t=ev.target,d=t.dataset;
 $("#cb").onclick=()=>$("#cart").hidden=false;$("#cx").onclick=()=>$("#cart").hidden=true;$("#f").onchange=sum;
 $("#f").onsubmit=async ev=>{ev.preventDefault();const r=calc();if(!r.it.length)return alert("Sepetin boş.");const d=Object.fromEntries(new FormData(ev.target));
  const ref=await F.addDoc(F.collection(db,"orders"),{name:d.name,phone:d.phone,addr:d.addr,reg:d.rg||"",note:d.note,items:r.it.map(x=>({n:x.p.name,q:x.q,p:x.p.price})),sub:r.sub,disc:r.disc,camp:r.best?.title||"",fee:r.f,total:r.total,status:"new",day:today(),at:F.serverTimestamp()});
- localStorage.oid=ref.id;cart={};ev.target.reset();sum();$("#cart").hidden=true;track()};
+ localStorage.oid=ref.id;cart={};ev.target.reset();sum();$("#cart").hidden=true;track();scrollTo(0,0)};
 </script>
