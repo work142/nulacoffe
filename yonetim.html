@@ -11,6 +11,7 @@
 </main></div>
 <script type="module">
 import{db,fs as F,$,e,TL,THEMES,applyTheme,getSettings,gate}from"./config.js";
+const OWNER="nulacoffe1@gmail.com";
 const C=n=>F.collection(db,n),D=(n,i)=>F.doc(db,n,i),M={merge:true};
 const live=(n,f)=>F.onSnapshot(C(n),s=>f(s.docs.map(d=>({id:d.id,...d.data()}))));
 const fill=(f,o)=>{for(const k in o)if(f.elements[k])f.elements[k].value=o[k]};
@@ -24,9 +25,10 @@ gate(["admin"],async()=>{const S=await getSettings(),dl=document.querySelector("
   $("#gl").innerHTML=[...new Set(l.map(x=>x.g))].map(x=>`<option value="${e(x)}">`).join("")});
  live("products",l=>$("#pl").innerHTML=l.map(p=>`<li>${e(p.name)}, ${TL(p.price)} ${btn("products",p.id,p.active===false,p.active===false?"Pasif (aç)":"Aktif (kapat)")}</li>`).join(""));
  live("campaigns",l=>$("#kl").innerHTML=l.map(x=>`<li>${e(x.title)}, %${x.pct} ${btn("campaigns",x.id,!x.active,x.active?"Açık (kapat)":"Kapalı (aç)")}</li>`).join(""));
- live("staff",l=>$("#sl").innerHTML=l.map(x=>`<li>${e(x.id)}, ${x.role} <button data-del="staff:${x.id}">Sil</button></li>`).join(""))});
+ live("staff",l=>$("#sl").innerHTML=l.map(x=>`<li>${e(x.id)}, ${x.role} ${x.id==OWNER?"(baş yönetici)":`<button data-del="staff:${x.id}">Sil</button>`}</li>`).join(""))});
 document.onsubmit=async ev=>{ev.preventDefault();const f=ev.target,d=Object.fromEntries(new FormData(f)),a=f.dataset.add,s=f.dataset.set;
  for(const k in d)if(f.elements[k].type=="number")d[k]=+d[k];
+ if(a=="staff"&&d.email.toLowerCase()==OWNER)return alert("Baş yönetici değiştirilemez.");
  if(a=="staff")await F.setDoc(D("staff",d.email.toLowerCase()),{role:d.role});
  else if(a)await F.addDoc(C(a),{...d,active:true});
  else if(s=="theme"){const{name,...t}=d;await F.setDoc(D("settings","main"),{name,theme:t},M)}
@@ -34,6 +36,6 @@ document.onsubmit=async ev=>{ev.preventDefault();const f=ev.target,d=Object.from
  a?f.reset():alert("Kaydedildi")};
 document.onclick=ev=>{const t=ev.target.dataset;
  if(t.p){fill($("#th"),THEMES[t.p]);applyTheme(THEMES[t.p])}
- if(t.del&&confirm("Silinsin mi?")){const[c,i]=t.del.split(":");F.deleteDoc(D(c,i))}
+ if(t.del&&t.del!="staff:"+OWNER&&confirm("Silinsin mi?")){const[c,i]=t.del.split(":");F.deleteDoc(D(c,i))}
  if(t.tg){const[c,i,v]=t.tg.split(":");F.updateDoc(D(c,i),{active:v=="true"})}};
 </script>
