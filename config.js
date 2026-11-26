@@ -2,7 +2,7 @@ import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-ap
 import*as fs from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import*as au from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 // Firebase konsolundaki web uygulaması değerlerini buraya yaz
-const app=initializeApp({apiKey:"BURAYA",authDomain:"PROJE.firebaseapp.com",projectId:"PROJE",appId:"BURAYA"});
+const app=initializeApp({apiKey:"AIzaSyBz23YJQ1yjsQOz1a1c7CW2mllLrj1qC4k",authDomain:"nula-7e835.firebaseapp.com",projectId:"nula-7e835",appId:"1:531279169344:web:a796aa56cf67fb012f1ca5"});
 export{fs,au};export const db=fs.getFirestore(app),auth=au.getAuth(app);
 export const $=s=>document.querySelector(s);
 export const e=s=>String(s??"").replace(/[&<>"]/g,c=>"&#"+c.charCodeAt(0)+";");
