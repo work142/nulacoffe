@@ -1,0 +1,8 @@
+rules_version='2';
+service cloud.firestore{match /databases/{d}/documents{
+ function st(){return request.auth!=null&&exists(/databases/$(d)/documents/staff/$(request.auth.token.email))}
+ function adm(){return st()&&get(/databases/$(d)/documents/staff/$(request.auth.token.email)).data.role=='admin'}
+ match /staff/{m}{allow read:if request.auth!=null&&(request.auth.token.email==m||adm());allow write:if adm()}
+ match /{c}/{i}{allow read:if c in ['settings','categories','products','campaigns'];allow write:if adm()&&c in ['settings','categories','products','campaigns']}
+ match /orders/{o}{allow get:if true;allow list,update:if st();allow create:if request.resource.data.status=='new'&&request.resource.data.items.size()>0}
+}}
