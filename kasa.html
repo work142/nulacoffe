@@ -1,15 +1,16 @@
 <!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kasa</title><link rel="stylesheet" href="style.css">
 <div id="gate" class="wrap"><h1>Kasa girişi</h1><button id="gbtn">Google ile giriş yap</button><p id="msg"></p></div>
-<div id="app" hidden><header><h1>Kasa</h1><span id="rev"></span><button id="snd">🔕 Sesi aç</button><button id="out">Çıkış</button></header><main class="wrap"><div id="ol" class="grid"></div></main></div>
+<div id="app" hidden><header><h1>Kasa</h1><span id="rev"></span><button id="snd">🔕 Ses ve bildirimi aç</button><button id="out">Çıkış</button></header><main class="wrap"><div id="ol" class="grid"></div></main></div>
 <script type="module">
 import{db,fs as F,$,e,TL,today,gate}from"./config.js";
 const NX={new:["prep","Hazırlanıyor"],prep:["way","Yola çıktı"],way:["done","Teslim edildi"]},LB={new:"Yeni",prep:"Hazırlanıyor",way:"Yolda",done:"Teslim edildi",cancelled:"İptal"};
 let ctx,first=1,pend=0;
 const beep=()=>{if(!ctx)return;[784,988,1175].forEach((f,i)=>{const t=ctx.currentTime+i*.25,o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=f;o.connect(g);g.connect(ctx.destination);g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.001,t+.22);o.start(t);o.stop(t+.25)})};
-$("#snd").onclick=()=>{ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();ctx.resume();beep();$("#snd").textContent="🔔 Ses açık"};
+const notify=s=>{if(window.Notification&&Notification.permission=="granted")s.docChanges().filter(c=>c.type=="added").forEach(c=>{const o=c.doc.data(),n=new Notification("Yeni sipariş",{body:o.name+", "+TL(o.total),tag:c.doc.id});n.onclick=()=>{focus();n.close()}})};
+$("#snd").onclick=()=>{ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();ctx.resume();beep();window.Notification&&Notification.requestPermission();$("#snd").textContent="🔔 Ses ve bildirim açık"};
 setInterval(()=>{if(pend)beep()},30000);
 gate(["kasa","admin"],()=>F.onSnapshot(F.query(F.collection(db,"orders"),F.where("day","==",today())),s=>{
- if(!first&&s.docChanges().some(c=>c.type=="added"))beep();first=0;
+ if(!first&&s.docChanges().some(c=>c.type=="added")){beep();notify(s)}first=0;
  const os=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.at?.seconds??9e9)-(a.at?.seconds??9e9)),dn=os.filter(o=>o.status=="done");pend=os.filter(o=>o.status=="new").length;
  $("#rev").textContent=`Bugün: ${TL(dn.reduce((a,o)=>a+o.total,0))} (${dn.length} teslim, ${os.filter(o=>!["done","cancelled"].includes(o.status)).length} bekleyen)`;
  $("#ol").innerHTML=os.map(o=>`<div class="card s-${o.status}"><div class="row"><b>${e(o.name)}</b><a href="tel:${e(o.phone)}">${e(o.phone)}</a></div><p>${e(o.addr)} ${e(o.reg)}</p>${o.note?`<p>Not: ${e(o.note)}</p>`:""}<ul>${o.items.map(i=>`<li>${i.q}× ${e(i.n)}</li>`).join("")}</ul><div class="row"><b>${TL(o.total)}</b><span>${LB[o.status]}</span></div>${NX[o.status]?`<button data-id="${o.id}" data-s="${NX[o.status][0]}">${NX[o.status][1]}</button> <button data-id="${o.id}" data-s="cancelled">İptal</button>`:""}</div>`).join("")||"<p>Bugün henüz sipariş yok.</p>"}));

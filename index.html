@@ -1,7 +1,8 @@
 <!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kafe</title><link rel="stylesheet" href="style.css">
-<header><h1 id="nm"></h1><button id="cb">🛒 Sepet <b id="cn">0</b></button></header>
+<header><h1 id="nm"></h1></header>
 <div id="camp"></div>
-<main class="wrap"><div id="trk"></div><nav id="gt"></nav><nav id="ct"></nav><div id="pl" class="grid"></div></main>
+<main class="wrap menu"><div id="trk"></div><section class="hero"><h2>İyi kahve, güzel insanlar, nice sohbetler.</h2><p>Menüden seçin, kapınıza getirelim. Ödeme kapıda.</p></section><nav id="gt"></nav><nav id="ct"></nav><div id="pl" class="grid"></div></main>
+<button id="cb" hidden>Sepeti gör <b id="cn">0</b></button>
 <aside id="cart" hidden><div class="sheet"><div class="row"><h2>Sepetim</h2><button id="cx">Kapat</button></div><div id="items"></div><div id="tot"></div>
 <form id="f"><input name="name" placeholder="Ad soyad" required><input name="phone" type="tel" placeholder="Telefon (05xx xxx xx xx)" pattern="[0-9 +]{10,15}" required><textarea name="addr" placeholder="Açık adres" required></textarea><textarea name="note" placeholder="Sipariş notu (isteğe bağlı)"></textarea><p>Ödeme kapıda: nakit veya kart.</p><button style="width:100%">Siparişi ver</button></form></div></aside>
 <script type="module">
@@ -16,14 +17,14 @@ function draw(){const gs=[...new Set(cats.map(x=>x.g))],ts=cats.filter(x=>x.g==g
 function calc(){const it=Object.entries(cart).map(([i,q])=>({p:prods.find(x=>x.id==i),q})).filter(x=>x.p),sub=it.reduce((a,x)=>a+x.p.price*x.q,0),
  best=camps.filter(x=>sub>=(x.min||0)).sort((a,b)=>b.pct-a.pct)[0],disc=best?Math.round(sub*best.pct)/100:0;
  return{it,sub,best,disc,total:sub-disc}}
-function sum(){const r=calc();$("#cn").textContent=r.it.reduce((a,x)=>a+x.q,0);
+function sum(){const r=calc();const n=r.it.reduce((a,x)=>a+x.q,0);$("#cn").textContent=n;$("#cb").hidden=!n;
  $("#items").innerHTML=r.it.map(x=>`<div class="row"><span>${e(x.p.name)}</span><span><button data-m="${x.p.id}:-1">−</button> ${x.q} <button data-m="${x.p.id}:1">+</button> ${TL(x.p.price*x.q)}</span></div>`).join("")||"<p>Sepetin boş. Menüden ürün ekle.</p>";
  $("#tot").innerHTML=`<div class="row"><span>Ara toplam</span>${TL(r.sub)}</div>`+(r.disc?`<div class="row"><span>${e(r.best.title)}</span>−${TL(r.disc)}</div>`:"")+`<div class="row"><b>Toplam</b><b>${TL(r.total)}</b></div>`}
 function track(){const id=localStorage.oid;if(!id)return;un&&un();
  un=F.onSnapshot(F.doc(db,"orders",id),s=>{const o=s.data();if(!o){$("#trk").innerHTML="";return}
  const L=["Alındı","Hazırlanıyor","Yolda","Teslim edildi"],i=["new","prep","way","done"].indexOf(o.status),x=o.status=="cancelled";
  $("#trk").innerHTML=`<div class="card"><b>${x?"Siparişiniz iptal edildi":"Siparişinizin durumu: "+L[i]}</b>${x||i==3?"":"<p>Siparişiniz alındı. Durumunu sayfanın üst kısmından takip edebilirsiniz.</p>"}`+(x?"":`<div class="steps">${L.map((l,k)=>`<span class="${k<=i?"on":""}">${l}</span>`).join("")}</div>`)+(x||i==3?'<button id="x">Kapat</button>':"")+"</div>"},()=>{})}
-(async()=>{S=await getSettings();applyTheme(S.theme);document.title=S.name;$("#nm").textContent=S.theme.emoji+" "+S.name;
+(async()=>{S=await getSettings();const T=S.theme.n?{bg:"#14110e",card:"#1e1a15",ink:"#f1e8d6",accent:"#c9a24b"}:S.theme;applyTheme(T);document.title=S.name;$("#nm").textContent=(S.theme.n||!T.emoji?"":T.emoji+" ")+S.name;
  [cats,prods,camps]=await Promise.all([col("categories"),col("products"),col("campaigns")]);
  prods=prods.filter(p=>p.active!==false);camps=camps.filter(x=>x.active);
  $("#camp").innerHTML=camps.map(x=>`<div class="ban">${e(x.title)}: %${x.pct} indirim</div>`).join("");
