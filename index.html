@@ -42,10 +42,16 @@ document.onclick=ev=>{const t=ev.target,d=t.dataset;
  else if(d.oc){if(confirm("Siparişiniz iptal edilsin mi?"))F.updateDoc(F.doc(db,"orders",localStorage.oid),{status:"cancelled"})}
  else if(t.id=="x"){localStorage.removeItem("oid");un&&un();cur=0;$("#trk").innerHTML=""}};
 $("#cb").onclick=()=>$("#cart").hidden=false;$("#cx").onclick=()=>$("#cart").hidden=true;$("#f").onchange=sum;
-$("#f").onsubmit=async ev=>{ev.preventDefault();const r=calc();if(!r.it.length)return alert("Sepetin boş.");const d=Object.fromEntries(new FormData(ev.target)),o={name:d.name,phone:d.phone,addr:d.addr,note:d.note,items:r.it.map(x=>({id:x.p.id,n:x.p.name,q:x.q,p:x.p.price})),sub:r.sub,disc:r.disc,camp:r.best?.title||"",total:r.total};
- if(edit){if(Date.now()-(+localStorage.ot||0)>HOLD){edit=0;$("#sb").textContent="Siparişi ver";return alert("Düzenleme süresi doldu, siparişiniz kasaya iletildi.")}
-  try{await F.updateDoc(F.doc(db,"orders",localStorage.oid),o)}catch{return alert("Düzenleme süresi doldu, siparişiniz kasaya iletildi.")}
-  edit=0;$("#sb").textContent="Siparişi ver"}
- else{const ref=await F.addDoc(F.collection(db,"orders"),{...o,status:"hold",day:today(),at:F.serverTimestamp()});localStorage.oid=ref.id;localStorage.ot=Date.now();track()}
- cart={};ev.target.reset();sum();$("#cart").hidden=true;scrollTo(0,0)};
+let busy=0;
+$("#f").onsubmit=async ev=>{ev.preventDefault();if(busy)return;const r=calc();if(!r.it.length)return alert("Sepetin boş.");
+ const f=ev.target,sb=$("#sb"),d=Object.fromEntries(new FormData(f)),o={name:d.name,phone:d.phone,addr:d.addr,note:d.note,items:r.it.map(x=>({id:x.p.id,n:x.p.name,q:x.q,p:x.p.price})),sub:r.sub,disc:r.disc,camp:r.best?.title||"",total:r.total};
+ busy=1;sb.disabled=true;sb.style.opacity=.6;sb.textContent="Gönderiliyor, lütfen bekleyin...";
+ const tm=setTimeout(()=>sb.textContent="Bağlantı yavaş, tekrar basmadan bekleyin...",8000);
+ try{
+  if(edit){if(Date.now()-(+localStorage.ot||0)>HOLD){edit=0;return alert("Düzenleme süresi doldu, siparişiniz kasaya iletildi.")}
+   await F.updateDoc(F.doc(db,"orders",localStorage.oid),o);edit=0}
+  else{const ref=await F.addDoc(F.collection(db,"orders"),{...o,status:"hold",day:today(),at:F.serverTimestamp()});localStorage.oid=ref.id;localStorage.ot=Date.now();track()}
+  cart={};f.reset();sum();$("#cart").hidden=true;scrollTo(0,0)}
+ catch(err){alert(edit?"Düzenleme süresi doldu, siparişiniz kasaya iletildi.":"Sipariş gönderilemedi, lütfen tekrar deneyin. ("+(err.code||err.message)+")");edit=0}
+ finally{clearTimeout(tm);busy=0;sb.disabled=false;sb.style.opacity="";sb.textContent=edit?"Siparişi güncelle":"Siparişi ver"}};
 </script>
