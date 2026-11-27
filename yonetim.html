@@ -6,7 +6,6 @@
 <h3>Ürün ekle</h3><form class="f" data-add="products"><select name="cat" id="pc" required></select><input name="name" placeholder="Ürün adı" required><input name="price" type="number" step="any" placeholder="Fiyat (₺)" required><input name="desc" placeholder="Açıklama"><button>Ürün ekle</button></form><ul id="pl"></ul></details>
 <details><summary>Kampanyalar</summary><form class="f" data-add="campaigns"><input name="title" placeholder="Kampanya adı" required><input name="pct" type="number" placeholder="İndirim yüzdesi" required><input name="min" type="number" value="0" placeholder="Minimum sepet (₺)"><button>Kampanya ekle</button></form><ul id="kl"></ul></details>
 <details><summary>Tema</summary><div id="pr"></div><form class="f" id="th" data-set="theme"><input name="name" placeholder="Kafe adı"><input name="emoji" placeholder="Başlık simgesi"><label>Arka plan<input type="color" name="bg"></label><label>Kart<input type="color" name="card"></label><label>Yazı<input type="color" name="ink"></label><label>Vurgu<input type="color" name="accent"></label><button>Temayı kaydet</button></form></details>
-<details><summary>Teslimat</summary><form class="f" data-set="delivery"><select name="mode"><option value="fixed">Sabit ücret</option><option value="region">Bölgeye göre ücret</option><option value="free_min">Minimum tutar üzeri ücretsiz</option><option value="none">Teslimat ücretsiz</option></select><input name="fee" type="number" step="any" placeholder="Ücret (₺)"><input name="min" type="number" placeholder="Ücretsiz için minimum tutar (₺)"><textarea name="regions" placeholder="Her satıra: Mahalle:ücret"></textarea><button>Teslimatı kaydet</button></form></details>
 <details><summary>Personel</summary><form class="f" data-add="staff"><input name="email" type="email" placeholder="Google e-postası" required><select name="role"><option value="kasa">Kasa</option><option value="admin">Yönetici</option></select><button>Personel ekle</button></form><ul id="sl"></ul></details>
 </main></div>
 <script type="module">
@@ -16,8 +15,8 @@ const C=n=>F.collection(db,n),D=(n,i)=>F.doc(db,n,i),M={merge:true};
 const live=(n,f)=>F.onSnapshot(C(n),s=>f(s.docs.map(d=>({id:d.id,...d.data()}))));
 const fill=(f,o)=>{for(const k in o)if(f.elements[k])f.elements[k].value=o[k]};
 const btn=(c,x,v,t)=>`<button data-tg="${c}:${x}:${v}">${t}</button> <button data-del="${c}:${x}">Sil</button>`;
-gate(["admin"],async()=>{const S=await getSettings(),dl=document.querySelector("[data-set=delivery]");
- fill($("#th"),{...S.theme,name:S.name});fill(dl,{...S.delivery,regions:S.delivery.regions.map(r=>r.n+":"+r.f).join("\n")});
+gate(["admin"],async()=>{const S=await getSettings();
+ fill($("#th"),{...S.theme,name:S.name});
  $("#th").oninput=()=>applyTheme(Object.fromEntries(new FormData($("#th"))));
  $("#pr").innerHTML=Object.entries(THEMES).map(([k,t])=>`<button data-p="${k}">${t.emoji} ${t.n}</button> `).join("");
  live("categories",l=>{$("#cl").innerHTML=l.map(x=>`<li>${e(x.g)} › ${e(x.n)} <button data-del="categories:${x.id}">Sil</button></li>`).join("");
@@ -32,7 +31,6 @@ document.onsubmit=async ev=>{ev.preventDefault();const f=ev.target,d=Object.from
  if(a=="staff")await F.setDoc(D("staff",d.email.toLowerCase()),{role:d.role});
  else if(a)await F.addDoc(C(a),{...d,active:true});
  else if(s=="theme"){const{name,...t}=d;await F.setDoc(D("settings","main"),{name,theme:t},M)}
- else if(s=="delivery"){d.regions=d.regions.split("\n").filter(x=>x.includes(":")).map(l=>{const[n,p]=l.split(":");return{n:n.trim(),f:+p}});await F.setDoc(D("settings","main"),{delivery:d},M)}
  a?f.reset():alert("Kaydedildi")};
 document.onclick=ev=>{const t=ev.target.dataset;
  if(t.p){fill($("#th"),THEMES[t.p]);applyTheme(THEMES[t.p])}

@@ -3,9 +3,9 @@
 <div id="camp"></div>
 <main class="wrap"><div id="trk"></div><nav id="gt"></nav><nav id="ct"></nav><div id="pl" class="grid"></div></main>
 <aside id="cart" hidden><div class="sheet"><div class="row"><h2>Sepetim</h2><button id="cx">Kapat</button></div><div id="items"></div><div id="tot"></div>
-<form id="f"><span id="rgw"></span><input name="name" placeholder="Ad soyad" required><input name="phone" type="tel" placeholder="Telefon (05xx xxx xx xx)" pattern="[0-9 +]{10,15}" required><textarea name="addr" placeholder="Açık adres" required></textarea><textarea name="note" placeholder="Sipariş notu (isteğe bağlı)"></textarea><p>Ödeme kapıda: nakit veya kart.</p><button style="width:100%">Siparişi ver</button></form></div></aside>
+<form id="f"><input name="name" placeholder="Ad soyad" required><input name="phone" type="tel" placeholder="Telefon (05xx xxx xx xx)" pattern="[0-9 +]{10,15}" required><textarea name="addr" placeholder="Açık adres" required></textarea><textarea name="note" placeholder="Sipariş notu (isteğe bağlı)"></textarea><p>Ödeme kapıda: nakit veya kart.</p><button style="width:100%">Siparişi ver</button></form></div></aside>
 <script type="module">
-import{db,fs as F,$,e,TL,today,applyTheme,getSettings,fee}from"./config.js";
+import{db,fs as F,$,e,TL,today,applyTheme,getSettings}from"./config.js";
 let S,cats=[],prods=[],camps=[],cart={},g="",c="",un;
 const col=n=>F.getDocs(F.collection(db,n)).then(s=>s.docs.map(d=>({id:d.id,...d.data()})));
 function draw(){const gs=[...new Set(cats.map(x=>x.g))],ts=cats.filter(x=>x.g==g);
@@ -14,17 +14,16 @@ function draw(){const gs=[...new Set(cats.map(x=>x.g))],ts=cats.filter(x=>x.g==g
  const ids=ts.filter(x=>!c||x.id==c).map(x=>x.id);
  $("#pl").innerHTML=prods.filter(p=>ids.includes(p.cat)).map(p=>`<div class="card"><h3>${e(p.name)}</h3><p>${e(p.desc)}</p><div class="row"><b>${TL(p.price)}</b><button data-a="${p.id}">Ekle</button></div></div>`).join("")||"<p>Bu kategoride henüz ürün yok.</p>"}
 function calc(){const it=Object.entries(cart).map(([i,q])=>({p:prods.find(x=>x.id==i),q})).filter(x=>x.p),sub=it.reduce((a,x)=>a+x.p.price*x.q,0),
- best=camps.filter(x=>sub>=(x.min||0)).sort((a,b)=>b.pct-a.pct)[0],disc=best?Math.round(sub*best.pct)/100:0,f=it.length?fee(S.delivery,sub-disc,$("#rg")?.value):0;
- return{it,sub,best,disc,f,total:sub-disc+f}}
+ best=camps.filter(x=>sub>=(x.min||0)).sort((a,b)=>b.pct-a.pct)[0],disc=best?Math.round(sub*best.pct)/100:0;
+ return{it,sub,best,disc,total:sub-disc}}
 function sum(){const r=calc();$("#cn").textContent=r.it.reduce((a,x)=>a+x.q,0);
  $("#items").innerHTML=r.it.map(x=>`<div class="row"><span>${e(x.p.name)}</span><span><button data-m="${x.p.id}:-1">−</button> ${x.q} <button data-m="${x.p.id}:1">+</button> ${TL(x.p.price*x.q)}</span></div>`).join("")||"<p>Sepetin boş. Menüden ürün ekle.</p>";
- $("#tot").innerHTML=`<div class="row"><span>Ara toplam</span>${TL(r.sub)}</div>`+(r.disc?`<div class="row"><span>${e(r.best.title)}</span>−${TL(r.disc)}</div>`:"")+`<div class="row"><span>Teslimat</span>${r.f?TL(r.f):"Ücretsiz"}</div><div class="row"><b>Toplam</b><b>${TL(r.total)}</b></div>`}
+ $("#tot").innerHTML=`<div class="row"><span>Ara toplam</span>${TL(r.sub)}</div>`+(r.disc?`<div class="row"><span>${e(r.best.title)}</span>−${TL(r.disc)}</div>`:"")+`<div class="row"><b>Toplam</b><b>${TL(r.total)}</b></div>`}
 function track(){const id=localStorage.oid;if(!id)return;un&&un();
  un=F.onSnapshot(F.doc(db,"orders",id),s=>{const o=s.data();if(!o){$("#trk").innerHTML="";return}
  const L=["Alındı","Hazırlanıyor","Yolda","Teslim edildi"],i=["new","prep","way","done"].indexOf(o.status),x=o.status=="cancelled";
  $("#trk").innerHTML=`<div class="card"><b>${x?"Siparişiniz iptal edildi":"Siparişinizin durumu: "+L[i]}</b>${x||i==3?"":"<p>Siparişiniz alındı. Durumunu sayfanın üst kısmından takip edebilirsiniz.</p>"}`+(x?"":`<div class="steps">${L.map((l,k)=>`<span class="${k<=i?"on":""}">${l}</span>`).join("")}</div>`)+(x||i==3?'<button id="x">Kapat</button>':"")+"</div>"},()=>{})}
 (async()=>{S=await getSettings();applyTheme(S.theme);document.title=S.name;$("#nm").textContent=S.theme.emoji+" "+S.name;
- if(S.delivery.mode=="region")$("#rgw").innerHTML=`<select name="rg" id="rg" required><option value="">Mahalle seç</option>${S.delivery.regions.map(r=>`<option>${e(r.n)}</option>`).join("")}</select>`;
  [cats,prods,camps]=await Promise.all([col("categories"),col("products"),col("campaigns")]);
  prods=prods.filter(p=>p.active!==false);camps=camps.filter(x=>x.active);
  $("#camp").innerHTML=camps.map(x=>`<div class="ban">${e(x.title)}: %${x.pct} indirim</div>`).join("");
@@ -36,6 +35,6 @@ document.onclick=ev=>{const t=ev.target,d=t.dataset;
  else if(t.id=="x"){localStorage.removeItem("oid");un&&un();$("#trk").innerHTML=""}};
 $("#cb").onclick=()=>$("#cart").hidden=false;$("#cx").onclick=()=>$("#cart").hidden=true;$("#f").onchange=sum;
 $("#f").onsubmit=async ev=>{ev.preventDefault();const r=calc();if(!r.it.length)return alert("Sepetin boş.");const d=Object.fromEntries(new FormData(ev.target));
- const ref=await F.addDoc(F.collection(db,"orders"),{name:d.name,phone:d.phone,addr:d.addr,reg:d.rg||"",note:d.note,items:r.it.map(x=>({n:x.p.name,q:x.q,p:x.p.price})),sub:r.sub,disc:r.disc,camp:r.best?.title||"",fee:r.f,total:r.total,status:"new",day:today(),at:F.serverTimestamp()});
+ const ref=await F.addDoc(F.collection(db,"orders"),{name:d.name,phone:d.phone,addr:d.addr,note:d.note,items:r.it.map(x=>({n:x.p.name,q:x.q,p:x.p.price})),sub:r.sub,disc:r.disc,camp:r.best?.title||"",total:r.total,status:"new",day:today(),at:F.serverTimestamp()});
  localStorage.oid=ref.id;cart={};ev.target.reset();sum();$("#cart").hidden=true;track();scrollTo(0,0)};
 </script>
