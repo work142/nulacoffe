@@ -1,16 +1,25 @@
 <!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kasa</title><link rel="stylesheet" href="style.css">
-<style>#st{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}.stat b{display:block;font:700 1.7rem/1.2 "Cormorant Garamond",Georgia,serif;color:var(--accent)}.stat span{color:var(--mute);font-size:.8rem}.sep{grid-column:1/-1;margin:14px 0 0;color:var(--mute)}.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.bar input{width:auto;margin:0}.ghost{background:none;border:1px solid var(--line);color:var(--ink)}</style>
+<style>#st{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}.stat b{display:block;font:600 1.6rem/1.2 Jost,system-ui,sans-serif;color:var(--accent)}.stat span{color:var(--mute);font-size:.8rem}.sep{grid-column:1/-1;margin:14px 0 0;color:var(--mute)}.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.bar input{width:auto;margin:0}.ghost{background:none;border:1px solid var(--line);color:var(--ink)}.warn{color:#ff8a6b!important;font-weight:600}#al{background:#b3261e;color:#fff;padding:10px 14px;border-radius:12px;margin-bottom:14px;font-weight:600}</style>
 <div id="gate" class="wrap"><h1>Kasa girişi</h1><button id="gbtn">Google ile giriş yap</button><p id="msg"></p></div>
 <div id="app" hidden><header><h1>Kasa</h1><span id="rev"></span><button id="snd">🔕 Ses ve bildirimi aç</button><button id="out">Çıkış</button></header>
-<main class="wrap"><div class="bar"><input type="date" id="dt"></div><div id="st"></div><div id="ol" class="grid"></div></main></div>
+<main class="wrap"><div class="bar"><input type="date" id="dt"></div><div id="al" hidden></div><div id="st"></div><div id="ol" class="grid"></div></main></div>
 <script type="module">
 import{db,fs as F,$,e,TL,today,gate}from"./config.js";
 const NX={new:["prep","Hazırlanıyor"],prep:["way","Yola çıktı"],way:["done","Teslim edildi"]},LB={new:"Yeni",prep:"Hazırlanıyor",way:"Yolda",done:"Teslim edildi",cancelled:"İptal"},HOLD=6e4;
-let ctx,all=[],seen=new Set(),first=1,pend=0,last="",day=today(),un;
+let ctx,all=[],seen=new Set(),first=1,pend=0,last="",day=today(),un,live=1,warned=new Set(),cx=new Set(),warnN=0,lastSt="";
 const beep=()=>{if(!ctx)return;[784,988,1175].forEach((f,i)=>{const t=ctx.currentTime+i*.25,o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=f;o.connect(g);g.connect(ctx.destination);g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.001,t+.22);o.start(t);o.stop(t+.25)})};
-const notify=o=>{if(window.Notification&&Notification.permission=="granted"){const n=new Notification("Yeni sipariş",{body:o.name+", "+TL(o.total),tag:o.id});n.onclick=()=>{focus();n.close()}}};
-$("#snd").onclick=()=>{ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();ctx.resume();beep();window.Notification&&Notification.requestPermission();$("#snd").textContent="🔔 Ses ve bildirim açık"};
-setInterval(()=>{if(pend)beep()},30000);
+const notify=(o,tt="Yeni sipariş",bd=o.name+", "+TL(o.total))=>{if(window.Notification&&Notification.permission=="granted"){const n=new Notification(tt,{body:bd,tag:o.id+tt});n.onclick=()=>{focus();n.close()}}};
+const alarm=()=>{if(!ctx)return;[880,660,880,660,880].forEach((f,i)=>{const t=ctx.currentTime+i*.2,o=ctx.createOscillator(),g=ctx.createGain();o.type="square";o.frequency.value=f;o.connect(g);g.connect(ctx.destination);g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.start(t);o.stop(t+.19)})};
+const autoCancel=o=>{if(cx.has(o.id))return;cx.add(o.id);const r=F.doc(db,"orders",o.id);F.runTransaction(db,async tx=>{const d=await tx.get(r);if(["hold","new"].includes(d.data().status))tx.update(r,{status:"cancelled",auto:true})}).catch(()=>cx.delete(o.id))};
+const tick=()=>document.querySelectorAll("[data-end]").forEach(b=>{const l=Math.max(0,Math.ceil((+b.dataset.end-Date.now())/1000));b.textContent=Math.floor(l/60)+":"+String(l%60).padStart(2,"0")});
+setInterval(tick,1000);
+const lab=()=>{const on=ctx&&ctx.state=="running",nt=window.Notification&&Notification.permission=="granted";
+ $("#snd").textContent=on&&nt?"🔔 Ses ve bildirim açık":on?"🔔 Ses açık, bildirimi aç":nt?"🔕 Sesi aç":"🔕 Ses ve bildirimi aç"};
+const unlock=()=>{ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();ctx.onstatechange=lab;return ctx.resume().then(lab)};
+$("#snd").onclick=()=>{unlock().then(beep);window.Notification&&Notification.requestPermission().then(lab)};
+document.addEventListener("click",ev=>{if(ev.target.id!="snd"&&(!ctx||ctx.state!="running"))unlock()},true);
+lab();
+setInterval(()=>{if(warnN)alarm();else if(pend)beep()},30000);
 const hm=t=>new Date(t).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
 const ago=t=>{const m=Math.floor((Date.now()-t)/6e4);return m<1?"az önce":m<60?m+" dk önce":Math.floor(m/60)+" sa "+m%60+" dk önce"};
 const act=o=>!["done","cancelled"].includes(o.st),sum=(a,k)=>a.reduce((x,o)=>x+(+o[k]||0),0);
@@ -19,23 +28,29 @@ function render(){const now=Date.now(),t=o=>o.at?.toMillis?.()??now,
  os=vis.map(o=>({...o,st:o.status=="hold"?"new":o.status})).sort((a,b)=>t(b)-t(a)),
  nw=os.filter(o=>!seen.has(o.id)&&o.st=="new");
  os.forEach(o=>seen.add(o.id));if(!first&&nw.length&&day==today()){beep();nw.forEach(notify)}first=0;
- const dn=os.filter(o=>o.st=="done"),cn=os.filter(o=>o.st=="cancelled"),pd=os.filter(o=>act(o)&&!o.hidden),ciro=sum(dn,"total"),cnt={};
- pend=pd.filter(o=>o.st=="new").length;
+ const dn=os.filter(o=>o.st=="done"),cn=os.filter(o=>o.st=="cancelled"&&!o.hidden),pd=os.filter(o=>act(o)&&!o.hidden),ciro=sum(dn,"total"),cnt={};
+ pend=pd.filter(o=>o.st=="new").length;document.title=(pend?"("+pend+") ":"")+"Kasa";
+ const arr=o=>t(o)+(o.status=="hold"?HOLD:0),age=o=>now-arr(o),wl=pd.filter(o=>o.st=="new"&&age(o)>=6e4);
+ if(day==today()){wl.filter(o=>age(o)>=18e4).forEach(autoCancel);
+  wl.filter(o=>!warned.has(o.id)&&age(o)<18e4).forEach(o=>{alarm();notify(o,"Sipariş hazırlanmadı","2 dk sonra iptal edilecek: "+o.name)})}
+ wl.forEach(o=>warned.add(o.id));warnN=wl.filter(o=>age(o)<18e4).length;
+ $("#al").hidden=!warnN;$("#al").textContent=`⚠ ${warnN} sipariş hazırlanmadı. Hazırlanıyor butonuna basılmazsa 2 dk sonra iptal edilecek.`;
  dn.forEach(o=>o.items.forEach(i=>cnt[i.n]=(cnt[i.n]||0)+i.q));
  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([n,q])=>`${e(n)} (${q})`).join(", ");
  $("#rev").textContent=(day==today()?"Bugün":day)+": "+TL(ciro)+(held?`, ${held} sipariş düzenleme süresinde`:"");
- $("#st").innerHTML=[["Günlük ciro",TL(ciro)],["Teslim edilen",dn.length],["Bekleyen",pd.length],["İptal",cn.length]].map(([k,v])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("")+(top?`<div class="stat" style="grid-column:1/-1"><span>En çok satanlar (adet)</span><div>${top}</div></div>`:"");
+ const sh=[["Günlük ciro",TL(ciro)],["Teslim edilen",dn.length],["Bekleyen",pd.length],["İptal",cn.length]].map(([k,v])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("")+(top?`<div class="stat" style="grid-column:1/-1"><span>En çok satanlar (adet)</span><div>${top}</div></div>`:"");
+ if(sh!==lastSt)$("#st").innerHTML=lastSt=sh;
  const card=o=>{const late=o.st=="new"&&now-t(o)>3e5,b=d=>`data-id="${o.id}" data-s="${d}"`;
-  return `<div class="card s-${o.st}"><div class="row"><b>${e(o.name)}</b><a href="tel:${e(o.phone)}">${e(o.phone)}</a></div><p${late?' style="color:#ff8a6b;font-weight:600"':""}>Saat ${hm(t(o))}${act(o)?", "+ago(t(o)):""}</p><p>${e(o.addr)}</p>${o.note?`<p>Not: ${e(o.note)}</p>`:""}<ul>${o.items.map(i=>`<li>${i.q}× ${e(i.n)}</li>`).join("")}</ul><div class="row"><b>${TL(o.total)}</b><span>${LB[o.st]}</span></div>`+
+  return `<div class="card s-${o.st}"><div class="row"><b>${e(o.name)}</b><a href="tel:${e(o.phone)}">${e(o.phone)}</a></div><p${late?' style="color:#ff8a6b;font-weight:600"':""}>Saat ${hm(t(o))}${act(o)?", "+ago(t(o)):""}</p><p>${e(o.addr)}</p>${o.note?`<p>Not: ${e(o.note)}</p>`:""}<ul>${o.items.map(i=>`<li>${i.q}× ${e(i.n)}</li>`).join("")}</ul><div class="row"><b>${TL(o.total)}</b><span>${LB[o.st]}</span></div>`+(o.st=="new"&&age(o)>=6e4&&age(o)<18e4?`<p class="warn">⚠ Bu siparişi hazırlamazsanız sipariş 2 dk sonra iptal edilecektir. Kalan süre: <b data-end="${arr(o)+18e4}"></b></p>`:"")+
   (NX[o.st]?`<button ${b(NX[o.st][0])}>${NX[o.st][1]}</button> <button class="ghost" ${b("cancelled")}>İptal</button>`:o.st=="done"?`<button class="ghost" data-id="${o.id}" data-h="1">Sil</button>`:"")+"</div>"};
  const l=os.filter(o=>!o.hidden),A=l.filter(act),Z=l.filter(o=>!act(o));
  let h=A.map(card).join("")||(Z.length?"":"<p>Bu gün için sipariş yok.</p>");
  if(Z.length)h+=`<h3 class="sep">Tamamlananlar (${Z.length})</h3>`+Z.map(card).join("");
- if(h!==last)$("#ol").innerHTML=last=h}
+ if(h!==last){$("#ol").innerHTML=last=h;tick()}}
 function subscribe(){un&&un();first=1;seen=new Set();all=[];last="";
  un=F.onSnapshot(F.query(F.collection(db,"orders"),F.where("day","==",day)),s=>{all=s.docs.map(d=>({id:d.id,...d.data()}));render()})}
-gate(["kasa","admin"],()=>{$("#dt").value=day;subscribe();setInterval(render,5000);
- $("#dt").onchange=()=>{day=$("#dt").value||today();subscribe()};
+gate(["kasa","admin"],()=>{$("#dt").value=day;subscribe();setInterval(render,2000);setInterval(()=>{if(live&&day!=today()){day=today();$("#dt").value=day;subscribe()}},30000);
+ $("#dt").onchange=()=>{day=$("#dt").value||today();live=day==today();subscribe()};
 });
 document.onclick=ev=>{const d=ev.target.dataset;if(!d.id)return;
  if(d.h){if(confirm("Teslim edilen sipariş listeden silinsin mi? Günlük ciroda kalmaya devam eder."))F.updateDoc(F.doc(db,"orders",d.id),{hidden:true});return}
