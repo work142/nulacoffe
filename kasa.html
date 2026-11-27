@@ -2,11 +2,11 @@
 <style>#st{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}.stat b{display:block;font:700 1.7rem/1.2 "Cormorant Garamond",Georgia,serif;color:var(--accent)}.stat span{color:var(--mute);font-size:.8rem}.sep{grid-column:1/-1;margin:14px 0 0;color:var(--mute)}.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.bar input{width:auto;margin:0}.ghost{background:none;border:1px solid var(--line);color:var(--ink)}</style>
 <div id="gate" class="wrap"><h1>Kasa girişi</h1><button id="gbtn">Google ile giriş yap</button><p id="msg"></p></div>
 <div id="app" hidden><header><h1>Kasa</h1><span id="rev"></span><button id="snd">🔕 Ses ve bildirimi aç</button><button id="out">Çıkış</button></header>
-<main class="wrap"><div class="bar"><input type="date" id="dt"><button class="ghost" id="hs"></button></div><div id="st"></div><div id="ol" class="grid"></div></main></div>
+<main class="wrap"><div class="bar"><input type="date" id="dt"></div><div id="st"></div><div id="ol" class="grid"></div></main></div>
 <script type="module">
 import{db,fs as F,$,e,TL,today,gate}from"./config.js";
 const NX={new:["prep","Hazırlanıyor"],prep:["way","Yola çıktı"],way:["done","Teslim edildi"]},LB={new:"Yeni",prep:"Hazırlanıyor",way:"Yolda",done:"Teslim edildi",cancelled:"İptal"},HOLD=6e4;
-let ctx,all=[],seen=new Set(),first=1,pend=0,last="",day=today(),un,showH=0;
+let ctx,all=[],seen=new Set(),first=1,pend=0,last="",day=today(),un;
 const beep=()=>{if(!ctx)return;[784,988,1175].forEach((f,i)=>{const t=ctx.currentTime+i*.25,o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=f;o.connect(g);g.connect(ctx.destination);g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.001,t+.22);o.start(t);o.stop(t+.25)})};
 const notify=o=>{if(window.Notification&&Notification.permission=="granted"){const n=new Notification("Yeni sipariş",{body:o.name+", "+TL(o.total),tag:o.id});n.onclick=()=>{focus();n.close()}}};
 $("#snd").onclick=()=>{ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();ctx.resume();beep();window.Notification&&Notification.requestPermission();$("#snd").textContent="🔔 Ses ve bildirim açık"};
@@ -19,30 +19,26 @@ function render(){const now=Date.now(),t=o=>o.at?.toMillis?.()??now,
  os=vis.map(o=>({...o,st:o.status=="hold"?"new":o.status})).sort((a,b)=>t(b)-t(a)),
  nw=os.filter(o=>!seen.has(o.id)&&o.st=="new");
  os.forEach(o=>seen.add(o.id));if(!first&&nw.length&&day==today()){beep();nw.forEach(notify)}first=0;
- const dn=os.filter(o=>o.st=="done"),cn=os.filter(o=>o.st=="cancelled"),pd=os.filter(o=>act(o)&&!o.hidden),hid=os.filter(o=>o.hidden),ciro=sum(dn,"total"),cnt={};
+ const dn=os.filter(o=>o.st=="done"),cn=os.filter(o=>o.st=="cancelled"),pd=os.filter(o=>act(o)&&!o.hidden),ciro=sum(dn,"total"),cnt={};
  pend=pd.filter(o=>o.st=="new").length;
  dn.forEach(o=>o.items.forEach(i=>cnt[i.n]=(cnt[i.n]||0)+i.q));
  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([n,q])=>`${e(n)} (${q})`).join(", ");
  $("#rev").textContent=(day==today()?"Bugün":day)+": "+TL(ciro)+(held?`, ${held} sipariş düzenleme süresinde`:"");
- $("#hs").textContent=showH?"Siparişlere dön":`Kaldırılanlar (${hid.length})`;
- $("#st").innerHTML=[["Günlük ciro",TL(ciro)],["Teslim edilen",dn.length],["Bekleyen",pd.length],["İptal",cn.length],["Ortalama sepet",dn.length?TL(Math.round(ciro/dn.length)):"-"],["Verilen indirim",TL(sum(dn,"disc"))]].map(([k,v])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("")+(top?`<div class="stat" style="grid-column:1/-1"><span>En çok satanlar (adet)</span><div>${top}</div></div>`:"");
+ $("#st").innerHTML=[["Günlük ciro",TL(ciro)],["Teslim edilen",dn.length],["Bekleyen",pd.length],["İptal",cn.length]].map(([k,v])=>`<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("")+(top?`<div class="stat" style="grid-column:1/-1"><span>En çok satanlar (adet)</span><div>${top}</div></div>`:"");
  const card=o=>{const late=o.st=="new"&&now-t(o)>3e5,b=d=>`data-id="${o.id}" data-s="${d}"`;
   return `<div class="card s-${o.st}"><div class="row"><b>${e(o.name)}</b><a href="tel:${e(o.phone)}">${e(o.phone)}</a></div><p${late?' style="color:#ff8a6b;font-weight:600"':""}>Saat ${hm(t(o))}${act(o)?", "+ago(t(o)):""}</p><p>${e(o.addr)}</p>${o.note?`<p>Not: ${e(o.note)}</p>`:""}<ul>${o.items.map(i=>`<li>${i.q}× ${e(i.n)}</li>`).join("")}</ul><div class="row"><b>${TL(o.total)}</b><span>${LB[o.st]}</span></div>`+
-  (showH?`<button class="ghost" data-id="${o.id}" data-h="0">Geri al</button>`:(NX[o.st]?`<button ${b(NX[o.st][0])}>${NX[o.st][1]}</button> <button class="ghost" ${b("cancelled")}>İptal</button> `:"")+`<button class="ghost" data-id="${o.id}" data-h="1">Kaldır</button>`)+"</div>"};
- let h;
- if(showH)h=hid.map(card).join("")||"<p>Kaldırılan sipariş yok.</p>";
- else{const l=os.filter(o=>!o.hidden),A=l.filter(act),Z=l.filter(o=>!act(o));
-  h=A.map(card).join("")||(Z.length?"":"<p>Bu gün için sipariş yok.</p>");
-  if(Z.length)h+=`<h3 class="sep">Tamamlananlar (${Z.length})</h3>`+Z.map(card).join("")}
+  (NX[o.st]?`<button ${b(NX[o.st][0])}>${NX[o.st][1]}</button> <button class="ghost" ${b("cancelled")}>İptal</button>`:o.st=="done"?`<button class="ghost" data-id="${o.id}" data-h="1">Sil</button>`:"")+"</div>"};
+ const l=os.filter(o=>!o.hidden),A=l.filter(act),Z=l.filter(o=>!act(o));
+ let h=A.map(card).join("")||(Z.length?"":"<p>Bu gün için sipariş yok.</p>");
+ if(Z.length)h+=`<h3 class="sep">Tamamlananlar (${Z.length})</h3>`+Z.map(card).join("");
  if(h!==last)$("#ol").innerHTML=last=h}
 function subscribe(){un&&un();first=1;seen=new Set();all=[];last="";
  un=F.onSnapshot(F.query(F.collection(db,"orders"),F.where("day","==",day)),s=>{all=s.docs.map(d=>({id:d.id,...d.data()}));render()})}
 gate(["kasa","admin"],()=>{$("#dt").value=day;subscribe();setInterval(render,5000);
  $("#dt").onchange=()=>{day=$("#dt").value||today();subscribe()};
- $("#hs").onclick=()=>{showH=!showH;last="";render()}});
-document.onclick=ev=>{const d=ev.target.dataset;if(!d.id)return;const ref=F.doc(db,"orders",d.id);
- if(d.h!=null){const o=all.find(x=>x.id==d.id);
-  if(d.h=="1"&&!confirm(o.status=="done"?"Sipariş listeden kaldırılsın mı? Ciro hesabında kalmaya devam eder.":o.status=="cancelled"?"Sipariş listeden kaldırılsın mı?":"Bu sipariş henüz tamamlanmadı. Yine de listeden kaldırılsın mı?"))return;
-  F.updateDoc(ref,{hidden:d.h=="1"})}
- else F.updateDoc(ref,{status:d.s})};
+});
+document.onclick=ev=>{const d=ev.target.dataset;if(!d.id)return;
+ if(d.h){if(confirm("Teslim edilen sipariş listeden silinsin mi? Günlük ciroda kalmaya devam eder."))F.updateDoc(F.doc(db,"orders",d.id),{hidden:true});return}
+ if(d.s=="cancelled"&&!confirm("Sipariş iptal edilsin mi?"))return;
+ F.updateDoc(F.doc(db,"orders",d.id),{status:d.s})};
 </script>
