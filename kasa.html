@@ -3,16 +3,24 @@
 <div id="app" hidden><header><h1>Kasa</h1><span id="rev"></span><button id="snd">🔕 Ses ve bildirimi aç</button><button id="out">Çıkış</button></header><main class="wrap"><div id="ol" class="grid"></div></main></div>
 <script type="module">
 import{db,fs as F,$,e,TL,today,gate}from"./config.js";
-const NX={new:["prep","Hazırlanıyor"],prep:["way","Yola çıktı"],way:["done","Teslim edildi"]},LB={new:"Yeni",prep:"Hazırlanıyor",way:"Yolda",done:"Teslim edildi",cancelled:"İptal"};
-let ctx,first=1,pend=0;
+const NX={new:["prep","Hazırlanıyor"],prep:["way","Yola çıktı"],way:["done","Teslim edildi"]},LB={new:"Yeni",prep:"Hazırlanıyor",way:"Yolda",done:"Teslim edildi",cancelled:"İptal"},HOLD=6e4;
+let ctx,all=[],seen=new Set(),first=1,pend=0,last="";
 const beep=()=>{if(!ctx)return;[784,988,1175].forEach((f,i)=>{const t=ctx.currentTime+i*.25,o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=f;o.connect(g);g.connect(ctx.destination);g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.001,t+.22);o.start(t);o.stop(t+.25)})};
-const notify=s=>{if(window.Notification&&Notification.permission=="granted")s.docChanges().filter(c=>c.type=="added").forEach(c=>{const o=c.doc.data(),n=new Notification("Yeni sipariş",{body:o.name+", "+TL(o.total),tag:c.doc.id});n.onclick=()=>{focus();n.close()}})};
+const notify=o=>{if(window.Notification&&Notification.permission=="granted"){const n=new Notification("Yeni sipariş",{body:o.name+", "+TL(o.total),tag:o.id});n.onclick=()=>{focus();n.close()}}};
 $("#snd").onclick=()=>{ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();ctx.resume();beep();window.Notification&&Notification.requestPermission();$("#snd").textContent="🔔 Ses ve bildirim açık"};
 setInterval(()=>{if(pend)beep()},30000);
-gate(["kasa","admin"],()=>F.onSnapshot(F.query(F.collection(db,"orders"),F.where("day","==",today())),s=>{
- if(!first&&s.docChanges().some(c=>c.type=="added")){beep();notify(s)}first=0;
- const os=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.at?.seconds??9e9)-(a.at?.seconds??9e9)),dn=os.filter(o=>o.status=="done");pend=os.filter(o=>o.status=="new").length;
- $("#rev").textContent=`Bugün: ${TL(dn.reduce((a,o)=>a+o.total,0))} (${dn.length} teslim, ${os.filter(o=>!["done","cancelled"].includes(o.status)).length} bekleyen)`;
- $("#ol").innerHTML=os.map(o=>`<div class="card s-${o.status}"><div class="row"><b>${e(o.name)}</b><a href="tel:${e(o.phone)}">${e(o.phone)}</a></div><p>${e(o.addr)} ${e(o.reg)}</p>${o.note?`<p>Not: ${e(o.note)}</p>`:""}<ul>${o.items.map(i=>`<li>${i.q}× ${e(i.n)}</li>`).join("")}</ul><div class="row"><b>${TL(o.total)}</b><span>${LB[o.status]}</span></div>${NX[o.status]?`<button data-id="${o.id}" data-s="${NX[o.status][0]}">${NX[o.status][1]}</button> <button data-id="${o.id}" data-s="cancelled">İptal</button>`:""}</div>`).join("")||"<p>Bugün henüz sipariş yok.</p>"}));
+const hm=t=>new Date(t).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
+const ago=t=>{const m=Math.floor((Date.now()-t)/6e4);return m<1?"az önce":m<60?m+" dk önce":Math.floor(m/60)+" sa "+m%60+" dk önce"};
+function render(){const now=Date.now(),t=o=>o.at?.toMillis?.()??now,
+ vis=all.filter(o=>o.status!="hold"||now-t(o)>=HOLD),held=all.length-vis.length,
+ os=vis.map(o=>({...o,st:o.status=="hold"?"new":o.status})).sort((a,b)=>t(b)-t(a)),dn=os.filter(o=>o.st=="done"),
+ nw=os.filter(o=>!seen.has(o.id)&&o.st=="new");
+ os.forEach(o=>seen.add(o.id));if(!first&&nw.length){beep();nw.forEach(notify)}first=0;
+ pend=os.filter(o=>o.st=="new").length;
+ $("#rev").textContent=`Bugün: ${TL(dn.reduce((a,o)=>a+o.total,0))} (${dn.length} teslim, ${os.filter(o=>!["done","cancelled"].includes(o.st)).length} bekleyen)`+(held?`, ${held} sipariş müşteri düzenleme süresinde`:"");
+ const h=os.map(o=>{const open=!["done","cancelled"].includes(o.st),late=o.st=="new"&&now-t(o)>3e5;
+  return `<div class="card s-${o.st}"><div class="row"><b>${e(o.name)}</b><a href="tel:${e(o.phone)}">${e(o.phone)}</a></div><p${late?' style="color:#ff8a6b;font-weight:600"':""}>Saat ${hm(t(o))}${open?", "+ago(t(o)):""}</p><p>${e(o.addr)}</p>${o.note?`<p>Not: ${e(o.note)}</p>`:""}<ul>${o.items.map(i=>`<li>${i.q}× ${e(i.n)}</li>`).join("")}</ul><div class="row"><b>${TL(o.total)}</b><span>${LB[o.st]}</span></div>${NX[o.st]?`<button data-id="${o.id}" data-s="${NX[o.st][0]}">${NX[o.st][1]}</button> <button data-id="${o.id}" data-s="cancelled">İptal</button>`:""}</div>`}).join("")||"<p>Bugün henüz sipariş yok.</p>";
+ if(h!==last)$("#ol").innerHTML=last=h}
+gate(["kasa","admin"],()=>{F.onSnapshot(F.query(F.collection(db,"orders"),F.where("day","==",today())),s=>{all=s.docs.map(d=>({id:d.id,...d.data()}));render()});setInterval(render,5000)});
 document.onclick=ev=>{const d=ev.target.dataset;if(d.id)F.updateDoc(F.doc(db,"orders",d.id),{status:d.s})};
 </script>
