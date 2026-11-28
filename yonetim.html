@@ -1,14 +1,39 @@
-<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Yönetim</title><link rel="stylesheet" href="style.css"><style>.hr{display:grid;grid-template-columns:96px 1fr 1fr auto;gap:8px;align-items:center}.hr input{margin:0}.hr label{display:flex;gap:6px;align-items:center;white-space:nowrap}.hr input[type=checkbox]{width:auto}</style>
+<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Yönetim</title><link rel="stylesheet" href="style.css">
+<style>
+#tabs{display:flex;gap:8px;overflow-x:auto;padding:12px 20px;scrollbar-width:none;max-width:980px;margin:0 auto}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:0 0 14px}
+.box h3{margin:0 0 8px}
+.f.inl{grid-template-columns:1fr auto}.f.inl input{margin:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pc{display:grid;grid-template-columns:96px 1fr;gap:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin:10px 0}
+.pc.out{opacity:.65}
+.pc input,.pc select{margin:0}
+.ph{width:96px;height:96px;border-radius:14px;background:var(--bg);display:grid;place-items:center;font-size:2rem;overflow:hidden}
+.ph img{width:100%;height:100%;object-fit:cover}
+.pf{display:grid;gap:8px;align-content:start}
+.act{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+.ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+.danger{border-color:#c98474;color:#e8a090}
+.pill{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:99px;padding:4px 6px 4px 14px;margin:0 6px 8px 0}
+.pill button{padding:2px 9px;border-radius:99px;background:none;border:0;color:var(--mute)}
+#pl h3{margin:22px 0 2px;color:var(--accent);font-size:1.5rem}
+#tt{position:fixed;bottom:20px;left:0;right:0;margin:0 auto;width:max-content;background:var(--accent);color:var(--bg);padding:8px 16px;border-radius:10px;z-index:20;font-weight:500}
+.hr{display:grid;grid-template-columns:96px 1fr 1fr auto;gap:8px;align-items:center}.hr input{margin:0}.hr label{display:flex;gap:6px;align-items:center;white-space:nowrap}.hr input[type=checkbox]{width:auto}
+</style>
 <div id="gate" class="wrap"><h1>Yönetim girişi</h1><button id="gbtn">Google ile giriş yap</button><p id="msg"></p></div>
-<div id="app" hidden><header><h1>Yönetim</h1><span><a href="kasa" style="color:#fff">Kasa</a> <button id="out">Çıkış</button></span></header><main class="wrap">
-<details open><summary>Menü</summary><h3>Kategori ekle</h3>
-<form class="f" data-add="categories"><input name="n" placeholder="Kategori adı (Tatlılar, Waffle)" required><button>Kategori ekle</button></form><ul id="cl"></ul>
-<h3>Ürün ekle</h3><form class="f" data-add="products"><select name="cat" id="pc" required></select><input name="name" placeholder="Ürün adı" required><input name="price" type="number" step="any" placeholder="Fiyat (₺)" required><input name="desc" placeholder="Açıklama"><label>Fotoğraf (isteğe bağlı)<input type="file" name="img" accept="image/*"></label><button>Ürün ekle</button></form><ul id="pl"></ul><input type="file" id="pf" accept="image/*" hidden></details>
-<details><summary>Kampanyalar</summary><form class="f" data-add="campaigns"><input name="title" placeholder="Kampanya adı" required><input name="pct" type="number" placeholder="İndirim yüzdesi" required><input name="min" type="number" value="0" placeholder="Minimum sepet (₺)"><button>Kampanya ekle</button></form><ul id="kl"></ul></details>
-<details><summary>Tema</summary><div id="pr"></div><form class="f" id="th" data-set="theme"><input name="name" placeholder="Kafe adı"><input name="emoji" placeholder="Başlık simgesi"><label>Arka plan<input type="color" name="bg"></label><label>Kart<input type="color" name="card"></label><label>Yazı<input type="color" name="ink"></label><label>Vurgu<input type="color" name="accent"></label><button>Temayı kaydet</button></form></details>
-<details><summary>Çalışma saatleri</summary><p>Kaydedene kadar kafe her zaman açık görünür. Kapanış saati açılıştan önceyse ertesi güne sarkar (örneğin 18:00 - 02:00).</p><form class="f" id="hf" data-set="hours"><div class="hr"><b>Pazartesi</b><input type="time" name="o1" value="09:00"><input type="time" name="c1" value="23:00"><label><input type="checkbox" name="x1">Kapalı</label></div><div class="hr"><b>Salı</b><input type="time" name="o2" value="09:00"><input type="time" name="c2" value="23:00"><label><input type="checkbox" name="x2">Kapalı</label></div><div class="hr"><b>Çarşamba</b><input type="time" name="o3" value="09:00"><input type="time" name="c3" value="23:00"><label><input type="checkbox" name="x3">Kapalı</label></div><div class="hr"><b>Perşembe</b><input type="time" name="o4" value="09:00"><input type="time" name="c4" value="23:00"><label><input type="checkbox" name="x4">Kapalı</label></div><div class="hr"><b>Cuma</b><input type="time" name="o5" value="09:00"><input type="time" name="c5" value="23:00"><label><input type="checkbox" name="x5">Kapalı</label></div><div class="hr"><b>Cumartesi</b><input type="time" name="o6" value="09:00"><input type="time" name="c6" value="23:00"><label><input type="checkbox" name="x6">Kapalı</label></div><div class="hr"><b>Pazar</b><input type="time" name="o0" value="09:00"><input type="time" name="c0" value="23:00"><label><input type="checkbox" name="x0">Kapalı</label></div><button type="button" data-cp="1">Pazartesi saatlerini tüm günlere uygula</button><button>Saatleri kaydet</button></form></details>
-<details><summary>Personel</summary><form class="f" data-add="staff"><input name="email" type="email" placeholder="Google e-postası" required><select name="role"><option value="kasa">Kasa</option><option value="admin">Yönetici</option></select><button>Personel ekle</button></form><ul id="sl"></ul></details>
-</main></div>
+<div id="app" hidden><header><h1>Yönetim</h1><span><a href="kasa">Kasa</a> <button id="out">Çıkış</button></span></header>
+<nav id="tabs"><button class="chip on" data-t="menu">Menü</button><button class="chip" data-t="kamp">Kampanyalar</button><button class="chip" data-t="saat">Çalışma saatleri</button><button class="chip" data-t="gor">Görünüm</button><button class="chip" data-t="pers">Personel</button></nav>
+<main class="wrap">
+<section id="t-menu">
+<div class="box"><h3>Kategoriler</h3><div id="cl"></div><form class="f inl" data-add="categories"><input name="n" placeholder="Yeni kategori adı" required><button>Ekle</button></form></div>
+<details class="box"><summary>＋ Yeni ürün ekle</summary><form class="f" data-add="products" style="margin-top:10px"><input name="name" placeholder="Ürün adı" required><div class="two"><input name="price" type="number" step="any" placeholder="Fiyat (₺)" required><select name="cat" id="pc" required></select></div><label>Fotoğraf (isteğe bağlı)<input type="file" name="img" accept="image/*"></label><button>Ürünü ekle</button></form></details>
+<div id="pl"></div><input type="file" id="pf" accept="image/*" hidden>
+</section>
+<section id="t-kamp" hidden><div class="box"><h3>Yeni kampanya</h3><form class="f" data-add="campaigns"><input name="title" placeholder="Kampanya adı" required><div class="two"><input name="pct" type="number" placeholder="İndirim yüzdesi" required><input name="min" type="number" value="0" placeholder="Minimum sepet (₺)"></div><button>Kampanya ekle</button></form></div><div id="kl"></div></section>
+<section id="t-saat" hidden><div class="box"><p>Kaydedene kadar kafe her zaman açık görünür. Kapanış saati açılıştan önceyse ertesi güne sarkar (örneğin 18:00 - 02:00).</p><form class="f" id="hf" data-set="hours"><div class="hr"><b>Pazartesi</b><input type="time" name="o1" value="09:00"><input type="time" name="c1" value="23:00"><label><input type="checkbox" name="x1">Kapalı</label></div><div class="hr"><b>Salı</b><input type="time" name="o2" value="09:00"><input type="time" name="c2" value="23:00"><label><input type="checkbox" name="x2">Kapalı</label></div><div class="hr"><b>Çarşamba</b><input type="time" name="o3" value="09:00"><input type="time" name="c3" value="23:00"><label><input type="checkbox" name="x3">Kapalı</label></div><div class="hr"><b>Perşembe</b><input type="time" name="o4" value="09:00"><input type="time" name="c4" value="23:00"><label><input type="checkbox" name="x4">Kapalı</label></div><div class="hr"><b>Cuma</b><input type="time" name="o5" value="09:00"><input type="time" name="c5" value="23:00"><label><input type="checkbox" name="x5">Kapalı</label></div><div class="hr"><b>Cumartesi</b><input type="time" name="o6" value="09:00"><input type="time" name="c6" value="23:00"><label><input type="checkbox" name="x6">Kapalı</label></div><div class="hr"><b>Pazar</b><input type="time" name="o0" value="09:00"><input type="time" name="c0" value="23:00"><label><input type="checkbox" name="x0">Kapalı</label></div><button type="button" class="ghost" data-cp="1">Pazartesi saatlerini tüm günlere uygula</button><button>Saatleri kaydet</button></form></div></section>
+<section id="t-gor" hidden><div class="box"><div id="pr"></div><form class="f" id="th" data-set="theme" style="margin-top:10px"><input name="name" placeholder="Kafe adı"><input name="emoji" placeholder="Başlık simgesi"><label>Arka plan<input type="color" name="bg"></label><label>Kart<input type="color" name="card"></label><label>Yazı<input type="color" name="ink"></label><label>Vurgu<input type="color" name="accent"></label><button>Kaydet</button></form></div></section>
+<section id="t-pers" hidden><div class="box"><h3>Personel ekle</h3><form class="f" data-add="staff"><input name="email" type="email" placeholder="Google e-postası" required><select name="role"><option value="kasa">Kasa</option><option value="admin">Yönetici</option></select><button>Personel ekle</button></form></div><div id="sl"></div></section>
+</main><div id="tt" hidden></div></div>
 <script type="module">
 import{db,fs as F,$,e,TL,THEMES,applyTheme,getSettings,gate}from"./config.js";
 const OWNER="nulacoffe1@gmail.com";
@@ -16,18 +41,25 @@ const C=n=>F.collection(db,n),D=(n,i)=>F.doc(db,n,i),M={merge:true};
 const live=(n,f)=>F.onSnapshot(C(n),s=>f(s.docs.map(d=>({id:d.id,...d.data()}))));
 const fill=(f,o)=>{for(const k in o)if(f.elements[k])f.elements[k].value=o[k]};
 const shrink=file=>new Promise((ok,no)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{URL.revokeObjectURL(u);const c=document.createElement("canvas");c.width=c.height=200;const m=Math.min(im.width,im.height);c.getContext("2d").drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,200,200);let q=.8,d=c.toDataURL("image/jpeg",q);while(d.length>30000&&q>.3){q-=.1;d=c.toDataURL("image/jpeg",q)}ok(d)};im.onerror=()=>no(new Error("görsel okunamadı"));im.src=u});
-$("#pf").onchange=async()=>{const fl=$("#pf").files[0];if(!fl)return;try{await F.updateDoc(D("products",window.pid),{img:await shrink(fl)})}catch(er){alert("Fotoğraf eklenemedi: "+er.message)}$("#pf").value=""};
-const btn=(c,x,v,t)=>`<button data-tg="${c}:${x}:${v}">${t}</button> <button data-del="${c}:${x}">Sil</button>`;
+let CA=[],PR=[],dirty=0,tm;
+const toast=m=>{const x=$("#tt");x.textContent=m;x.hidden=false;clearTimeout(tm);tm=setTimeout(()=>x.hidden=true,1600)};
+$("#pf").onchange=async()=>{const fl=$("#pf").files[0];if(!fl)return;try{await F.updateDoc(D("products",window.pid),{img:await shrink(fl)});toast("Fotoğraf eklendi")}catch(er){alert("Fotoğraf eklenemedi: "+er.message)}$("#pf").value=""};
+const opts=s=>CA.map(c=>`<option value="${c.id}"${c.id==s?" selected":""}>${e(c.n)}</option>`).join("");
+const card=p=>{const so=p.out||p.active===false;return `<div class="pc${so?" out":""}" data-id="${p.id}"><div class="ph">${p.img?`<img src="${e(p.img)}" alt="">`:"🍽"}</div><div class="pf"><input data-f="name" value="${e(p.name)}" aria-label="Ürün adı"><div class="two"><input data-f="price" type="number" step="any" value="${+p.price}" aria-label="Fiyat"><select data-f="cat" aria-label="Kategori">${opts(p.cat)}</select></div></div><div class="act"><button class="ghost" data-ph="${p.id}">Fotoğraf</button>${p.img?`<button class="ghost danger" data-phx="${p.id}">Fotoğrafı sil</button>`:""}<button class="ghost" data-out="${p.id}:${!so}">${so?"Satışa aç":"Tükendi yap"}</button><button class="ghost danger" data-del="products:${p.id}">Sil</button></div></div>`};
+const busy=()=>{const a=document.activeElement;return a&&$("#pl").contains(a)&&a.matches("input,select")};
+function paint(){if(busy()){dirty=1;return}dirty=0;
+ const known=new Set(CA.map(c=>c.id)),g=CA.map(c=>[c.n,PR.filter(p=>p.cat==c.id)]),or=PR.filter(p=>!known.has(p.cat));if(or.length)g.push(["Kategorisiz",or]);
+ $("#pl").innerHTML=g.filter(x=>x[1].length).map(([n,ps])=>`<h3>${e(n)}</h3>`+ps.map(card).join("")).join("")||"<p>Henüz ürün yok. Önce bir kategori, sonra ürün ekle.</p>"}
+$("#pl").addEventListener("focusout",()=>setTimeout(()=>{if(dirty)paint()},80));
 gate(["admin"],async()=>{const S=await getSettings();
  fill($("#th"),{...S.theme,name:S.name});
  const hf=$("#hf");for(let i=0;i<7;i++){const x=S.hours?.[i];if(x){hf.elements["o"+i].value=x.o;hf.elements["c"+i].value=x.c;hf.elements["x"+i].checked=!!x.x}}
  $("#th").oninput=()=>applyTheme(Object.fromEntries(new FormData($("#th"))));
- $("#pr").innerHTML=Object.entries(THEMES).map(([k,t])=>`<button data-p="${k}">${t.emoji} ${t.n}</button> `).join("");
- live("categories",l=>{$("#cl").innerHTML=l.map(x=>`<li>${e(x.n)} <button data-del="categories:${x.id}">Sil</button></li>`).join("");
-  $("#pc").innerHTML=l.map(x=>`<option value="${x.id}">${e(x.n)}</option>`).join("")});
- live("products",l=>$("#pl").innerHTML=l.map(p=>`<li>${p.img?`<img src="${e(p.img)}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">`:""}${e(p.name)}, ${TL(p.price)} <button data-ph="${p.id}">${p.img?"Fotoğrafı değiştir":"Fotoğraf ekle"}</button> ${p.img?`<button data-phx="${p.id}">Fotoğrafı kaldır</button> `:""}${btn("products",p.id,p.active===false,p.active===false?"Pasif (aç)":"Aktif (kapat)")}</li>`).join(""));
- live("campaigns",l=>$("#kl").innerHTML=l.map(x=>`<li>${e(x.title)}, %${x.pct} ${btn("campaigns",x.id,!x.active,x.active?"Açık (kapat)":"Kapalı (aç)")}</li>`).join(""));
- live("staff",l=>$("#sl").innerHTML=l.map(x=>`<li>${e(x.id)}, ${x.role} ${x.id==OWNER?"(baş yönetici)":`<button data-del="staff:${x.id}">Sil</button>`}</li>`).join(""))});
+ $("#pr").innerHTML=Object.entries(THEMES).map(([k,t])=>`<button class="ghost" data-p="${k}">${t.emoji} ${t.n}</button> `).join("");
+ live("categories",l=>{CA=l;$("#cl").innerHTML=l.map(c=>`<span class="pill">${e(c.n)}<button data-del="categories:${c.id}" aria-label="Kategoriyi sil">✕</button></span>`).join("")||"<p>Henüz kategori yok.</p>";const s=$("#pc").value;$("#pc").innerHTML=opts();if(s)$("#pc").value=s;paint()});
+ live("products",l=>{PR=l;paint()});
+ live("campaigns",l=>$("#kl").innerHTML=l.map(x=>`<div class="box row"><span><b>${e(x.title)}</b><br><small>%${x.pct} indirim${x.min?", "+TL(x.min)+" üzeri":""}</small></span><span><button class="${x.active?"":"ghost"}" data-tg="campaigns:${x.id}:${!x.active}">${x.active?"Açık":"Kapalı"}</button> <button class="ghost danger" data-del="campaigns:${x.id}">Sil</button></span></div>`).join("")||"<p>Henüz kampanya yok.</p>");
+ live("staff",l=>$("#sl").innerHTML=l.map(x=>`<div class="box row"><span>${e(x.id)}<br><small>${x.role=="admin"?"Yönetici":"Kasa"}</small></span>${x.id==OWNER?"<small>(baş yönetici)</small>":`<button class="ghost danger" data-del="staff:${x.id}">Sil</button>`}</div>`).join(""))});
 document.onsubmit=async ev=>{ev.preventDefault();const f=ev.target,d=Object.fromEntries(new FormData(f)),a=f.dataset.add,s=f.dataset.set;
  if(f.elements.img){const fl=f.elements.img.files[0];delete d.img;if(fl){try{d.img=await shrink(fl)}catch(er){return alert("Fotoğraf eklenemedi: "+er.message)}}}
  for(const k in d)if(f.elements[k].type=="number")d[k]=+d[k];
@@ -36,12 +68,20 @@ document.onsubmit=async ev=>{ev.preventDefault();const f=ev.target,d=Object.from
  else if(a)await F.addDoc(C(a),{...d,active:true});
  else if(s=="hours"){const h={};for(let i=0;i<7;i++)h[i]={o:d["o"+i]||"",c:d["c"+i]||"",x:f.elements["x"+i].checked};await F.setDoc(D("settings","main"),{hours:h},M)}
  else if(s=="theme"){const{name,...t}=d;await F.setDoc(D("settings","main"),{name,theme:t},M)}
- a?f.reset():alert("Kaydedildi")};
+ if(a)f.reset();toast(a?"Eklendi":"Kaydedildi")};
+document.onchange=ev=>{const el=ev.target,k=el.dataset.f;if(!k)return;let v=el.value;
+ if(k=="price"){v=+v;if(!(v>=0))return toast("Geçersiz fiyat")}
+ if(k=="name"){v=v.trim();if(!v)return toast("Ad boş olamaz")}
+ F.updateDoc(D("products",el.closest(".pc").dataset.id),{[k]:v}).then(()=>toast("Kaydedildi")).catch(()=>toast("Kaydedilemedi"))};
 document.onclick=ev=>{const t=ev.target.dataset;
+ if(t.t){document.querySelectorAll("main>section").forEach(x=>x.hidden=x.id!="t-"+t.t);document.querySelectorAll("#tabs .chip").forEach(b=>b.classList.toggle("on",b.dataset.t==t.t))}
  if(t.cp){const g=n=>$("#hf").elements[n];for(let i=0;i<7;i++){g("o"+i).value=g("o1").value;g("c"+i).value=g("c1").value;g("x"+i).checked=g("x1").checked}}
  if(t.ph){window.pid=t.ph;$("#pf").click()}
  if(t.phx)F.updateDoc(D("products",t.phx),{img:F.deleteField()});
+ if(t.out){const[i,v]=t.out.split(":");F.updateDoc(D("products",i),v=="true"?{out:true}:{out:false,active:true})}
  if(t.p){fill($("#th"),THEMES[t.p]);applyTheme(THEMES[t.p])}
- if(t.del&&t.del!="staff:"+OWNER&&confirm("Silinsin mi?")){const[c,i]=t.del.split(":");F.deleteDoc(D(c,i))}
+ if(t.del&&t.del!="staff:"+OWNER){const[c,i]=t.del.split(":");
+  if(c=="categories"&&PR.some(p=>p.cat==i))return alert("Bu kategoride ürün var. Önce ürünleri silin ya da başka kategoriye taşıyın.");
+  if(confirm("Silinsin mi?"))F.deleteDoc(D(c,i))}
  if(t.tg){const[c,i,v]=t.tg.split(":");F.updateDoc(D(c,i),{active:v=="true"})}};
 </script>
