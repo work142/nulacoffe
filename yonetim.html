@@ -3,7 +3,7 @@
 <div id="app" hidden><header><h1>Yönetim</h1><span><a href="kasa" style="color:#fff">Kasa</a> <button id="out">Çıkış</button></span></header><main class="wrap">
 <details open><summary>Menü</summary><h3>Kategori ekle</h3>
 <form class="f" data-add="categories"><input name="n" placeholder="Kategori adı (Tatlılar, Waffle)" required><button>Kategori ekle</button></form><ul id="cl"></ul>
-<h3>Ürün ekle</h3><form class="f" data-add="products"><select name="cat" id="pc" required></select><input name="name" placeholder="Ürün adı" required><input name="price" type="number" step="any" placeholder="Fiyat (₺)" required><input name="desc" placeholder="Açıklama"><button>Ürün ekle</button></form><ul id="pl"></ul></details>
+<h3>Ürün ekle</h3><form class="f" data-add="products"><select name="cat" id="pc" required></select><input name="name" placeholder="Ürün adı" required><input name="price" type="number" step="any" placeholder="Fiyat (₺)" required><input name="desc" placeholder="Açıklama"><label>Fotoğraf (isteğe bağlı)<input type="file" name="img" accept="image/*"></label><button>Ürün ekle</button></form><ul id="pl"></ul><input type="file" id="pf" accept="image/*" hidden></details>
 <details><summary>Kampanyalar</summary><form class="f" data-add="campaigns"><input name="title" placeholder="Kampanya adı" required><input name="pct" type="number" placeholder="İndirim yüzdesi" required><input name="min" type="number" value="0" placeholder="Minimum sepet (₺)"><button>Kampanya ekle</button></form><ul id="kl"></ul></details>
 <details><summary>Tema</summary><div id="pr"></div><form class="f" id="th" data-set="theme"><input name="name" placeholder="Kafe adı"><input name="emoji" placeholder="Başlık simgesi"><label>Arka plan<input type="color" name="bg"></label><label>Kart<input type="color" name="card"></label><label>Yazı<input type="color" name="ink"></label><label>Vurgu<input type="color" name="accent"></label><button>Temayı kaydet</button></form></details>
 <details><summary>Çalışma saatleri</summary><p>Kaydedene kadar kafe her zaman açık görünür. Kapanış saati açılıştan önceyse ertesi güne sarkar (örneğin 18:00 - 02:00).</p><form class="f" id="hf" data-set="hours"><div class="hr"><b>Pazartesi</b><input type="time" name="o1" value="09:00"><input type="time" name="c1" value="23:00"><label><input type="checkbox" name="x1">Kapalı</label></div><div class="hr"><b>Salı</b><input type="time" name="o2" value="09:00"><input type="time" name="c2" value="23:00"><label><input type="checkbox" name="x2">Kapalı</label></div><div class="hr"><b>Çarşamba</b><input type="time" name="o3" value="09:00"><input type="time" name="c3" value="23:00"><label><input type="checkbox" name="x3">Kapalı</label></div><div class="hr"><b>Perşembe</b><input type="time" name="o4" value="09:00"><input type="time" name="c4" value="23:00"><label><input type="checkbox" name="x4">Kapalı</label></div><div class="hr"><b>Cuma</b><input type="time" name="o5" value="09:00"><input type="time" name="c5" value="23:00"><label><input type="checkbox" name="x5">Kapalı</label></div><div class="hr"><b>Cumartesi</b><input type="time" name="o6" value="09:00"><input type="time" name="c6" value="23:00"><label><input type="checkbox" name="x6">Kapalı</label></div><div class="hr"><b>Pazar</b><input type="time" name="o0" value="09:00"><input type="time" name="c0" value="23:00"><label><input type="checkbox" name="x0">Kapalı</label></div><button type="button" data-cp="1">Pazartesi saatlerini tüm günlere uygula</button><button>Saatleri kaydet</button></form></details>
@@ -15,6 +15,8 @@ const OWNER="nulacoffe1@gmail.com";
 const C=n=>F.collection(db,n),D=(n,i)=>F.doc(db,n,i),M={merge:true};
 const live=(n,f)=>F.onSnapshot(C(n),s=>f(s.docs.map(d=>({id:d.id,...d.data()}))));
 const fill=(f,o)=>{for(const k in o)if(f.elements[k])f.elements[k].value=o[k]};
+const shrink=file=>new Promise((ok,no)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{URL.revokeObjectURL(u);const c=document.createElement("canvas");c.width=c.height=200;const m=Math.min(im.width,im.height);c.getContext("2d").drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,200,200);let q=.8,d=c.toDataURL("image/jpeg",q);while(d.length>30000&&q>.3){q-=.1;d=c.toDataURL("image/jpeg",q)}ok(d)};im.onerror=()=>no(new Error("görsel okunamadı"));im.src=u});
+$("#pf").onchange=async()=>{const fl=$("#pf").files[0];if(!fl)return;try{await F.updateDoc(D("products",window.pid),{img:await shrink(fl)})}catch(er){alert("Fotoğraf eklenemedi: "+er.message)}$("#pf").value=""};
 const btn=(c,x,v,t)=>`<button data-tg="${c}:${x}:${v}">${t}</button> <button data-del="${c}:${x}">Sil</button>`;
 gate(["admin"],async()=>{const S=await getSettings();
  fill($("#th"),{...S.theme,name:S.name});
@@ -23,10 +25,11 @@ gate(["admin"],async()=>{const S=await getSettings();
  $("#pr").innerHTML=Object.entries(THEMES).map(([k,t])=>`<button data-p="${k}">${t.emoji} ${t.n}</button> `).join("");
  live("categories",l=>{$("#cl").innerHTML=l.map(x=>`<li>${e(x.n)} <button data-del="categories:${x.id}">Sil</button></li>`).join("");
   $("#pc").innerHTML=l.map(x=>`<option value="${x.id}">${e(x.n)}</option>`).join("")});
- live("products",l=>$("#pl").innerHTML=l.map(p=>`<li>${e(p.name)}, ${TL(p.price)} ${btn("products",p.id,p.active===false,p.active===false?"Pasif (aç)":"Aktif (kapat)")}</li>`).join(""));
+ live("products",l=>$("#pl").innerHTML=l.map(p=>`<li>${p.img?`<img src="${e(p.img)}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:8px">`:""}${e(p.name)}, ${TL(p.price)} <button data-ph="${p.id}">${p.img?"Fotoğrafı değiştir":"Fotoğraf ekle"}</button> ${p.img?`<button data-phx="${p.id}">Fotoğrafı kaldır</button> `:""}${btn("products",p.id,p.active===false,p.active===false?"Pasif (aç)":"Aktif (kapat)")}</li>`).join(""));
  live("campaigns",l=>$("#kl").innerHTML=l.map(x=>`<li>${e(x.title)}, %${x.pct} ${btn("campaigns",x.id,!x.active,x.active?"Açık (kapat)":"Kapalı (aç)")}</li>`).join(""));
  live("staff",l=>$("#sl").innerHTML=l.map(x=>`<li>${e(x.id)}, ${x.role} ${x.id==OWNER?"(baş yönetici)":`<button data-del="staff:${x.id}">Sil</button>`}</li>`).join(""))});
 document.onsubmit=async ev=>{ev.preventDefault();const f=ev.target,d=Object.fromEntries(new FormData(f)),a=f.dataset.add,s=f.dataset.set;
+ if(f.elements.img){const fl=f.elements.img.files[0];delete d.img;if(fl){try{d.img=await shrink(fl)}catch(er){return alert("Fotoğraf eklenemedi: "+er.message)}}}
  for(const k in d)if(f.elements[k].type=="number")d[k]=+d[k];
  if(a=="staff"&&d.email.toLowerCase()==OWNER)return alert("Baş yönetici değiştirilemez.");
  if(a=="staff")await F.setDoc(D("staff",d.email.toLowerCase()),{role:d.role});
@@ -36,6 +39,8 @@ document.onsubmit=async ev=>{ev.preventDefault();const f=ev.target,d=Object.from
  a?f.reset():alert("Kaydedildi")};
 document.onclick=ev=>{const t=ev.target.dataset;
  if(t.cp){const g=n=>$("#hf").elements[n];for(let i=0;i<7;i++){g("o"+i).value=g("o1").value;g("c"+i).value=g("c1").value;g("x"+i).checked=g("x1").checked}}
+ if(t.ph){window.pid=t.ph;$("#pf").click()}
+ if(t.phx)F.updateDoc(D("products",t.phx),{img:F.deleteField()});
  if(t.p){fill($("#th"),THEMES[t.p]);applyTheme(THEMES[t.p])}
  if(t.del&&t.del!="staff:"+OWNER&&confirm("Silinsin mi?")){const[c,i]=t.del.split(":");F.deleteDoc(D(c,i))}
  if(t.tg){const[c,i,v]=t.tg.split(":");F.updateDoc(D(c,i),{active:v=="true"})}};
